@@ -1,11 +1,11 @@
 // Iv=5 LCD=(11,10,9,8,7,6) Rele=12 Botao=4 #4,5,6,7,8,9,10,11
 // #1,2,3,12,13
 unsigned long milise=0; 
-#include <IRremote.h>
+#include <IRremote_library.h> //#include <IRremote>
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(11,10,9,8,7,6);
 const int IV = 5;
-int temp,tempan,cont=0,seg=0,minut=0,hor=0,parado=0,minuta=0,hora=0,b=3000,timer=0,definido=5000,beep=50; 
+int temp,tempan,cont=0,seg=0,minut=0,hor=0,parado=0,minuta=0,hora=0,b=3000,timer=0,definido=5000,beep=50,desligar=0; 
 bool Status,Status2,alarme,beeps;
 IRrecv Rec(IV);
 decode_results results;
@@ -23,6 +23,7 @@ void setup()
 }
 
 void loop() {
+//  digitalWrite (13,1); teste, deixar ligado LCD
   if (timer>0){
     timer--;
     if (beep>0){
@@ -49,28 +50,28 @@ void loop() {
       if (b>100){
         digitalWrite(12,1);
         Serial.println("Liga");
-        Status=1;b=0;
+        Status=1;b=0;desligar=90;
       }  
     }
     else if (results.value==0x800F840C && Status){
       if (b>100){
         digitalWrite(12,0);
         Serial.println("desLiga");
-        Status=0; b=0;
+        Status=0; b=0;desligar=0;
       }
     }
     else if (results.value==0x800F040C && !Status){
       if (b>100){
         digitalWrite(12,1);
         Serial.println("Liga");
-        Status=1;b=0;
+        Status=1;b=0;desligar=90;
       } 
     }
     else if (results.value==0x800F040C && Status){
       if (b>100){
         digitalWrite(12,0);
         Serial.println("desLiga");
-        Status=0; b=0;
+        Status=0; b=0;desligar=0;
       }
     }
     else if (results.value==0x800F840D || results.value==0x800F040D){
@@ -177,32 +178,39 @@ void loop() {
     if (!Status){
       digitalWrite(12,1);
       Serial.println("Liga");
-      timer=0;
+      timer=0;desligar=90;
       digitalWrite(3,0);
       Status=1; 
     }
     else if (Status){
       digitalWrite(12,0);
       Serial.println("desLiga");
-      timer=0;
+      timer=0;desligar=0;
       digitalWrite(3,0);
       Status=0; 
     }
-    while(digitalRead(4)==0){}    
+    while(digitalRead(4)==0){
+      synchora();
+      }    
   }
   if (hora==hor && minut==minuta && alarme) {
     timer=definido;
     alarme=0;
   }
 //  delay(100);
+  if (desligar==0 && Status) {
+    digitalWrite(12,0);
+    Status=0;
+  }
 }
 void synchora(){
   lcd.setCursor(0,1);lcd.print(hor);lcd.print(":");lcd.print(minut);lcd.print(':');lcd.print(seg);lcd.print(" ");lcd.print(temp);lcd.print("oC");if (alarme) {lcd.print(" a");} else {lcd.print("   ");}
-  if ((millis()-milise)>1000){
-    milise=millis();
+  if ((millis()-milise)>=1000){
+    milise=milise+1000;
     seg++;    
   }
   if (seg>=60){
+    if(desligar>0)desligar--;
     seg=0;
     minut++;
   }
@@ -215,7 +223,7 @@ void synchora(){
 void syncalarme(){
   lcd.setCursor(0,1);lcd.print(hora);lcd.print(":");lcd.print(minuta);lcd.print(" | ");lcd.print(definido);lcd.print("   ");
     if ((millis()-milise)>1000){
-    milise=millis();
+    milise=milise+1000;
     seg++;    
   }
   if (seg>=60){
