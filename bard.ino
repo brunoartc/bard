@@ -5,7 +5,7 @@ unsigned long milise=0;
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(11,10,9,8,7,6);
 const int IV = 5;
-int temp,tempan,cont=0,seg=0,minut=0,hor=0,parado=0,minuta=0,hora=0,b=3000,timer=0,definido=5000,beep=50,desligar=0; 
+int temp,tempan,cont=0,seg=0,minut=0,hor=0,parado=0,minuta=0,hora=0,b=3000,timer=0,definido=5000,beep=50,desligar=0,timerr=90; 
 bool Status,Status2,alarme,beeps;
 IRrecv Rec(IV);
 decode_results results;
@@ -50,7 +50,7 @@ void loop() {
       if (b>100){
         digitalWrite(12,1);
         Serial.println("Liga");
-        Status=1;b=0;desligar=90;
+        Status=1;b=0;desligar=timerr;
       }  
     }
     else if (results.value==0x800F840C && Status){
@@ -64,7 +64,7 @@ void loop() {
       if (b>100){
         digitalWrite(12,1);
         Serial.println("Liga");
-        Status=1;b=0;desligar=90;
+        Status=1;b=0;desligar=timerr;
       } 
     }
     else if (results.value==0x800F040C && Status){
@@ -89,7 +89,7 @@ void loop() {
     else if (results.value==0x800F0424 || results.value==0x800F8424){
       Rec.resume();
       while (parado<200){
-        lcd.setCursor(0,0);lcd.print("Editando Hora");
+        lcd.setCursor(0,0);lcd.print("Editando Hora ti=");lcd.print(timerr);
         synchora();
         if (Rec.decode(&results)){
           if (results.value==0x800F0480 || results.value==0x800F8480){
@@ -111,6 +111,10 @@ void loop() {
               Serial.println("LigaLCD");
               Status2=1; b=0;
             }
+          }
+          else if(results.value==0xFFFFFFFF || results.value==0xFFFFFFFF){ //0xFFFFFFFF=bota para aumentar 'timer'
+              parado=0;
+              timer++;  
           }
           Rec.resume();
         }
@@ -178,7 +182,7 @@ void loop() {
     if (!Status){
       digitalWrite(12,1);
       Serial.println("Liga");
-      timer=0;desligar=90;
+      timer=0;desligar=timerr;
       digitalWrite(3,0);
       Status=1; 
     }
@@ -204,7 +208,7 @@ void loop() {
   }
 }
 void synchora(){
-  lcd.setCursor(0,1);lcd.print(hor);lcd.print(":");lcd.print(minut);lcd.print(':');lcd.print(seg);lcd.print(" ");lcd.print(temp);lcd.print("oC");if (alarme) {lcd.print(" a");} else {lcd.print("   ");}
+  lcd.setCursor(0,1);lcd.print(hor);lcd.print(":");lcd.print(minut);lcd.print(':');lcd.print(seg);lcd.print(" ");lcd.print(temp);lcd.print("oC");if (alarme) {lcd.print(" a");} else if (desligar>0){lcd.print(desligar);} else {lcd.print("    ");}
   if ((millis()-milise)>=1000){
     milise=milise+1000;
     seg++;    
